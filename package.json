@@ -1,6 +1,6 @@
 {
   "name": "smu-sys-web",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "private": true,
   "description": "SMU SYS Web Frontend",
   "repository": "git@github.com:ZengLiangYi/SMU-SYS-Web.git",

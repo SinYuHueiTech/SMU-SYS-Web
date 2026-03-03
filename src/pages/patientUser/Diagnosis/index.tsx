@@ -94,6 +94,24 @@ const Diagnosis: React.FC = () => {
     [imagingItems, selectedImagingIds],
   );
 
+  // -------- Step 2 初始值（memoized，避免每次渲染重新计算） --------
+  const step2InitialValues = useMemo(() => {
+    const vals: Record<string, unknown[]> = {};
+    const labMap = diagnosisData?.lab_result_images;
+    if (labMap) {
+      for (const [indicatorId, url] of Object.entries(labMap)) {
+        vals[`lab__${indicatorId}`] = [urlToUploadFile(url)];
+      }
+    }
+    const imgMap = diagnosisData?.imaging_result_images;
+    if (imgMap) {
+      for (const [indicatorId, url] of Object.entries(imgMap)) {
+        vals[`img__${indicatorId}`] = [urlToUploadFile(url)];
+      }
+    }
+    return vals;
+  }, [diagnosisData?.lab_result_images, diagnosisData?.imaging_result_images]);
+
   // -------- Step 2 上传自动保存 --------
   const uploadFieldProps = useMemo(
     () => ({
@@ -288,7 +306,8 @@ const Diagnosis: React.FC = () => {
               message.success('诊断流程完成');
               history.push(`/patient-user/detail/${patientId}`);
               return true;
-            } catch {
+            } catch (error) {
+              console.error('Diagnosis submit failed:', error);
               message.error('提交失败，请重试');
               return false;
             }
@@ -317,7 +336,8 @@ const Diagnosis: React.FC = () => {
                   values.physical_signs ?? '',
                 );
                 return true;
-              } catch {
+              } catch (error) {
+                console.error('Step 0 save failed:', error);
                 message.error('保存失败，请重试');
                 return false;
               }
@@ -384,7 +404,8 @@ const Diagnosis: React.FC = () => {
                   examination_steps: aiExaminationSteps ?? undefined,
                 });
                 return true;
-              } catch {
+              } catch (error) {
+                console.error('Step 1 save failed:', error);
                 message.error('保存失败，请重试');
                 return false;
               }
@@ -410,22 +431,7 @@ const Diagnosis: React.FC = () => {
           <StepsForm.StepForm
             name="results"
             title="检测结果录入"
-            initialValues={(() => {
-              const vals: Record<string, unknown[]> = {};
-              const labMap = diagnosisData?.lab_result_images;
-              if (labMap) {
-                for (const [indicatorId, url] of Object.entries(labMap)) {
-                  vals[`lab__${indicatorId}`] = [urlToUploadFile(url)];
-                }
-              }
-              const imgMap = diagnosisData?.imaging_result_images;
-              if (imgMap) {
-                for (const [indicatorId, url] of Object.entries(imgMap)) {
-                  vals[`img__${indicatorId}`] = [urlToUploadFile(url)];
-                }
-              }
-              return vals;
-            })()}
+            initialValues={step2InitialValues}
             onFinish={async () => {
               try {
                 const { labResultImages, imagingResultImages } =
@@ -464,7 +470,8 @@ const Diagnosis: React.FC = () => {
 
                 loadDiagnosisData();
                 return true;
-              } catch {
+              } catch (error) {
+                console.error('Step 2 save failed:', error);
                 message.error('保存失败，请重试');
                 return false;
               }
@@ -574,7 +581,8 @@ const Diagnosis: React.FC = () => {
                 });
                 loadPrescriptionData();
                 return true;
-              } catch {
+              } catch (error) {
+                console.error('Step 3 save failed:', error);
                 message.error('保存失败，请重试');
                 return false;
               }

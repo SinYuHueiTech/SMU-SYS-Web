@@ -26,6 +26,12 @@ interface ResponseStructure {
   data: any;
 }
 
+// 生产环境后端地址（开发环境使用代理，留空即可）
+const PRODUCTION_API_BASE =
+  process.env.NODE_ENV === 'production'
+    ? 'https://alzheimer.dianchuang.club'
+    : '';
+
 // ============ Token 刷新机制 ============
 
 // 刷新状态管理
@@ -73,12 +79,7 @@ async function refreshToken(): Promise<string | null> {
         : '/api/doctor/auth/refresh';
 
     // 直接使用 fetch 避免循环依赖
-    const baseURL =
-      process.env.NODE_ENV === 'development'
-        ? ''
-        : 'https://alzheimer.dianchuang.club';
-
-    const response = await fetch(`${baseURL}${endpoint}`, {
+    const response = await fetch(`${PRODUCTION_API_BASE}${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshTokenValue }),
@@ -190,13 +191,13 @@ export const errorConfig: RequestConfig = {
       } else if (error.response) {
         // Axios 的错误
         // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
-        message.error(`Response status:${error.response.status}`);
+        message.error(`请求失败，状态码：${error.response.status}`);
       } else if (error.request) {
         // 请求已经成功发起，但没有收到响应
-        message.error('None response! Please retry.');
+        message.error('服务器无响应，请重试');
       } else {
         // 发送请求时出了点问题
-        message.error('Request error, please retry.');
+        message.error('请求发送失败，请重试');
       }
     },
   },
@@ -222,18 +223,7 @@ export const errorConfig: RequestConfig = {
   // 响应拦截器 - 处理 401/403 并自动刷新 token
   responseInterceptors: [
     [
-      (response) => {
-        // 拦截响应数据，进行个性化处理
-        const { data } = response as unknown as ResponseStructure;
-        const isError =
-          data?.success === false ||
-          (data?.status !== undefined && data?.status !== 'OK');
-
-        if (isError) {
-          message.error(data?.msg || data?.errorMessage || '请求失败！');
-        }
-        return response;
-      },
+      (response) => response,
       async (error: any) => {
         const { response, config } = error;
 
